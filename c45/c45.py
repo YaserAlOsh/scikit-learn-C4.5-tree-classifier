@@ -78,6 +78,18 @@ class C45(BaseEstimator, ClassifierMixin):
             answer = answerlist[0][0]
             prediction.append((self.resultType)(answer))
         return prediction
+    def predict_proba(self, X):
+        check_is_fitted(self, ['tree_', 'resultType', 'attrNames', 'classes_'])
+        X = check_array(X)
+        dom = minidom.parseString(self.tree_)
+        root = dom.childNodes[0]
+        probas = []
+        for i in range(len(X)):
+            answerlist = decision(root, X[i], self.attrNames, 1)
+            total = sum(answerlist.values())
+            class_probas = [answerlist.get(str(c), 0) / total for c in self.classes_]
+            probas.append(class_probas)
+        return np.array(probas)
 
     def printTree(self):
         check_is_fitted(self, ['tree_'])
