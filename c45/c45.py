@@ -1,4 +1,5 @@
 import math
+import numpy as np
 from xml.dom import minidom
 from xml.etree import ElementTree as ET
 
@@ -72,23 +73,40 @@ class C45(BaseEstimator, ClassifierMixin):
         dom = minidom.parseString(self.tree_)
         root = dom.childNodes[0]
         prediction = []
+        #print('predict')
         for i in range(len(X)):
             answerlist = decision(root,X[i],self.attrNames,1)
             answerlist = sorted(answerlist.items(), key=lambda x:x[1], reverse = True )
+            #print(answerlist)
             answer = answerlist[0][0]
             prediction.append((self.resultType)(answer))
         return prediction
     def predict_proba(self, X):
-        check_is_fitted(self, ['tree_', 'resultType', 'attrNames', 'classes_'])
+        check_is_fitted(self, ['tree_', 'resultType', 'attrNames'])
         X = check_array(X)
         dom = minidom.parseString(self.tree_)
         root = dom.childNodes[0]
         probas = []
+        #print('predict_proba')
         for i in range(len(X)):
             answerlist = decision(root, X[i], self.attrNames, 1)
+            #print(answerlist)
             total = sum(answerlist.values())
-            class_probas = [answerlist.get(str(c), 0) / total for c in self.classes_]
+            classes = sorted(answerlist.keys())
+            class_probas = [answerlist.get(c, 0) for c in classes]
+            #print(class_probas)
+            if total > 0:
+                class_probas = [p / total for p in class_probas]
+            else:
+                # If all probabilities are zero, assign equal probabilities
+                class_probas = [1 / classes] * classes
+
+            if len(class_probas) == 1:
+                class_probas = [1 - class_probas[0], class_probas[0]]
+            #print(class_probas)
             probas.append(class_probas)
+        #print(probas)
+        #print(np.array(probas))
         return np.array(probas)
 
     def printTree(self):
